@@ -19,20 +19,13 @@ CryptoAPI::~CryptoAPI()
   delete microecc_module;
 }
 
-int CryptoAPI::init(Libraries library, Algorithms algorithm, Hashes hash, size_t length_of_shake256)
+int CryptoAPI::init(Algorithms algorithm, Hashes hash, size_t length_of_shake256)
 {
-  this->print_init_configuration(library, algorithm, hash, length_of_shake256);
-  this->chosen_library = library;
-
-  if (library == Libraries::MBEDTLS_LIB)
-  {
-    delete wolfssl_module;
-    delete microecc_module;
-  }
+  commons.init_littlefs();
 
   if (this->chosen_library == Libraries::MBEDTLS_LIB)
   {
-    return mbedtls_module->init(algorithm, hash);
+    return mbedtls_module->init(algorithm, hash, 0);
   }
 
   if (this->chosen_library == Libraries::WOLFSSL_LIB)
@@ -40,7 +33,15 @@ int CryptoAPI::init(Libraries library, Algorithms algorithm, Hashes hash, size_t
     return wolfssl_module->init(algorithm, hash, length_of_shake256);
   }
 
-  return microecc_module->init(hash);
+  return microecc_module->init(Algorithms::ECDSA_SECP256R1, hash, 0);
+}
+
+int CryptoAPI::init(Libraries library, Algorithms algorithm, Hashes hash, size_t length_of_shake256)
+{
+  this->print_init_configuration(library, algorithm, hash, length_of_shake256);
+  this->chosen_library = library;
+
+  return init(algorithm, hash, length_of_shake256);
 }
 
 int CryptoAPI::get_signature_size()
@@ -55,10 +56,10 @@ int CryptoAPI::get_signature_size()
     return wolfssl_module->get_signature_size();
   }
 
-  return 64;
+  return microecc_module->get_signature_size();
 }
 
-int CryptoAPI::gen_rsa_keys(int rsa_key_size, int rsa_exponent)
+int CryptoAPI::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
 {
   if (this->chosen_library == Libraries::MBEDTLS_LIB)
   {
@@ -88,6 +89,21 @@ int CryptoAPI::gen_keys()
   return microecc_module->gen_keys();
 }
 
+int CryptoAPI::get_public_key_pem(unsigned char *public_key_pem)
+{
+  if (this->chosen_library == Libraries::MBEDTLS_LIB)
+  {
+    return mbedtls_module->get_public_key_pem(public_key_pem);
+  }
+
+  if (this->chosen_library == Libraries::WOLFSSL_LIB)
+  {
+    return wolfssl_module->get_public_key_pem(public_key_pem);
+  }
+
+  return microecc_module->get_public_key_pem(public_key_pem);
+}
+
 int CryptoAPI::sign(const unsigned char *message, size_t message_length, unsigned char *signature, size_t *signature_length)
 {
   if (this->chosen_library == Libraries::MBEDTLS_LIB)
@@ -100,17 +116,7 @@ int CryptoAPI::sign(const unsigned char *message, size_t message_length, unsigne
     return wolfssl_module->sign(message, message_length, signature, signature_length);
   }
 
-  return microecc_module->sign(message, message_length, signature);
-}
-
-int CryptoAPI::sign(const unsigned char *message, size_t message_length, unsigned char *signature)
-{
-  if (this->chosen_library != Libraries::MICROECC_LIB)
-  {
-    return -1000;
-  }
-
-  return this->sign(message, message_length, signature, 0);
+  return microecc_module->sign(message, message_length, signature, 0);
 }
 
 int CryptoAPI::verify(const unsigned char *message, size_t message_length, unsigned char *signature, size_t signature_length)
@@ -125,21 +131,13 @@ int CryptoAPI::verify(const unsigned char *message, size_t message_length, unsig
     return wolfssl_module->verify(message, message_length, signature, signature_length);
   }
 
-  return microecc_module->verify(message, message_length, signature);
-}
-
-int CryptoAPI::verify(const unsigned char *message, size_t message_length, unsigned char *signature)
-{
-  if (this->chosen_library != Libraries::MICROECC_LIB)
-  {
-    return -1000;
-  }
-
-  return this->verify(message, message_length, signature, 0);
+  return microecc_module->verify(message, message_length, signature, 0);
 }
 
 void CryptoAPI::close()
 {
+  commons.close_littlefs();
+
   if (this->chosen_library == Libraries::MBEDTLS_LIB)
   {
     mbedtls_module->close();
@@ -153,6 +151,160 @@ void CryptoAPI::close()
   }
 
   microecc_module->close();
+}
+
+void CryptoAPI::save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size)
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    this->mbedtls_module->save_private_key(file_path, private_key, private_key_size);
+    return;
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    // todo wolfssl
+    return;
+  }
+
+  // todo microecc
+}
+
+void CryptoAPI::save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size)
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    this->mbedtls_module->save_public_key(file_path, public_key, public_key_size);
+    return;
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    // todo wolfssl
+    return;
+  }
+
+  // todo microecc
+}
+
+void CryptoAPI::save_signature(const char *file_path, const unsigned char *signature, size_t sig_len)
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    this->mbedtls_module->save_signature(file_path, signature, sig_len);
+    return;
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    // todo wolfssl
+    return;
+  }
+
+  // todo microecc
+}
+
+void CryptoAPI::load_private_key(const char *file_path, unsigned char *private_key, size_t file_size)
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    this->mbedtls_module->load_private_key(file_path, private_key, file_size);
+    return;
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    // todo wolfssl
+    return;
+  }
+
+  // todo microecc
+}
+
+void CryptoAPI::load_public_key(const char *file_path, unsigned char *public_key, size_t file_size)
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    this->mbedtls_module->load_public_key(file_path, public_key, file_size);
+    return;
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    // todo wolfssl
+    return;
+  }
+
+  // todo microecc
+}
+
+void CryptoAPI::load_signature(const char *file_path, unsigned char *signature, size_t file_size)
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    this->mbedtls_module->load_signature(file_path, signature, file_size);
+    return;
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    // todo wolfssl
+    return;
+  }
+
+  // todo microecc
+}
+
+long CryptoAPI::get_file_size(const char *file_path)
+{
+  return commons.get_file_size(file_path);
+}
+
+size_t CryptoAPI::get_private_key_size()
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    return this->mbedtls_module->get_private_key_size();
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    // todo wolfssl
+    return 0;
+  }
+
+  // todo microecc
+  return 0;
+}
+
+size_t CryptoAPI::get_public_key_size()
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    return this->mbedtls_module->get_public_key_size();
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    return this->wolfssl_module->get_public_key_size();
+  }
+
+  return this->microecc_module->get_public_key_size();
+}
+
+size_t CryptoAPI::get_public_key_pem_size()
+{
+  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+  {
+    return this->mbedtls_module->get_public_key_pem_size();
+  }
+
+  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+  {
+    return this->wolfssl_module->get_public_key_pem_size();
+  }
+
+  return this->microecc_module->get_public_key_pem_size();
 }
 
 Algorithms CryptoAPI::get_chosen_algorithm()
@@ -233,7 +385,7 @@ void CryptoAPI::print_init_configuration(Libraries library, Algorithms algorithm
     break;
   }
 
-  ESP_LOGI(TAG, "> INITIALIZED LIBRARY [ %s ] WITH ALGORITHM [ %s ] AND HASH [ %s ]", library_str, algorithm_str, hash_str);
+  ESP_LOGI(TAG, "INITIALIZED LIBRARY [ %s ] WITH ALGORITHM [ %s ] AND HASH [ %s ]", library_str, algorithm_str, hash_str);
 
   if (hash == Hashes::MY_SHAKE_256)
   {

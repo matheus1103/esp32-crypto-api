@@ -46,46 +46,139 @@ size_t CryptoApiCommons::get_hash_length()
   }
 }
 
-void CryptoApiCommons::save_pub_key(const char *pubkey_filename, char *public_key_pem, const int buffer_length)
+void CryptoApiCommons::init_littlefs()
 {
-  // ESP_LOGI(TAG, "Saving public key PEM...");
+  conf = {
+      .base_path = "/littlefs",
+      .partition_label = "littlefs",
+      .format_if_mount_failed = true,
+      .dont_mount = false};
 
-  // File pubkey_file = SPIFFS.open(pubkey_filename, "w");
-  // if (!pubkey_file)
-  // {
-  //   ESP_LOGE(TAG, "Failed to open pubkey file for writing");
-  // }
+  esp_err_t ret = esp_vfs_littlefs_register(&conf);
 
-  // size_t bytes_written = pubkey_file.write((const uint8_t *)public_key_pem, buffer_length);
-  // if (bytes_written != buffer_length)
-  // {
-  //   ESP_LOGE(TAG, "Error writing to pubkey file");
-  // }
+  if (ret != ESP_OK)
+  {
+    if (ret == ESP_FAIL)
+    {
+      ESP_LOGE(TAG, "Failed to mount or format filesystem");
+    }
+    else if (ret == ESP_ERR_NOT_FOUND)
+    {
+      ESP_LOGE(TAG, "Failed to find LittleFS partition");
+    }
+    else
+    {
+      ESP_LOGE(TAG, "Failed to initialize LittleFS (%s)", esp_err_to_name(ret));
+    }
+    return;
+  }
 
-  // pubkey_file.close();
+  size_t total = 0, used = 0;
+  ret = esp_littlefs_info(conf.partition_label, &total, &used);
+  if (ret != ESP_OK)
+  {
+    ESP_LOGE(TAG, "Failed to get LittleFS partition information (%s)", esp_err_to_name(ret));
+  }
+  else
+  {
+    ESP_LOGI(TAG, "Partition size: total: %d, used: %d", total, used);
+  }
 }
 
-// std::string CryptoApiCommons::load_pub_key(const char *pubkey_filename)
-// {
-// Serial.println("Loading public key PEM...");
+void CryptoApiCommons::close_littlefs()
+{
+  esp_vfs_littlefs_unregister(conf.partition_label);
+}
 
-// File pubkey_file = SPIFFS.open(pubkey_filename, "r");
-// if (!pubkey_file)
-// {
-//   Serial.println("Failed to open public key file");
-//   pubkey_file.close();
-//   return "error";
-// }
+void CryptoApiCommons::write_file(const char *file_path, const unsigned char *data)
+{
+  // Open the file for writing
+  FILE *file = fopen(file_path, "w");
+  if (file != NULL)
+  {
+    // Write data to the file
+    fprintf(file, "%s", data);
+    fclose(file);
+    ESP_LOGI(TAG, "Data written to %s successfully", file_path);
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to open file for writing");
+  }
+}
 
-// std::string public_key_pem;
-// while (pubkey_file.available())
-// {
-//   public_key_pem += (char)pubkey_file.read();
-// }
-// pubkey_file.close();
+void CryptoApiCommons::write_binary_file(const char *file_path, const unsigned char *data, size_t data_len)
+{
+  // Open the file for writing in binary mode
+  FILE *file = fopen(file_path, "wb");
+  if (file != NULL)
+  {
+    // Write the data to the file
+    size_t written = fwrite(data, 1, data_len, file);
+    fclose(file);
 
-// return public_key_pem;
-// }
+    // Check if all data was written
+    if (written == data_len)
+    {
+      ESP_LOGI(TAG, "Data successfully written to %s", file_path);
+    }
+    else
+    {
+      ESP_LOGE(TAG, "Only %zu out of %zu bytes written to %s", written, data_len, file_path);
+    }
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to open file for writing: %s", file_path);
+  }
+}
+
+void CryptoApiCommons::read_file(const char *file_path, unsigned char *buffer, size_t buffer_size)
+{
+  FILE *file = fopen(file_path, "r");
+  if (file != NULL)
+  {
+    size_t read_size = fread(buffer, 1, buffer_size, file);
+    fclose(file);
+
+    if (read_size != buffer_size)
+    {
+      ESP_LOGE(TAG, "Failed to read entire file: %s", file_path);
+      free(buffer);
+      return;
+    }
+
+    ESP_LOGI(TAG, "Data loaded from %s", file_path);
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to open file for reading");
+  }
+}
+
+long CryptoApiCommons::get_file_size(const char *file_path)
+{
+  FILE *file = fopen(file_path, "rb");
+  if (file == NULL)
+  {
+    ESP_LOGE(TAG, "Failed to open file: %s", file_path);
+    return -1;
+  }
+
+  fseek(file, 0, SEEK_END);
+  long file_size = ftell(file);
+  fseek(file, 0, SEEK_SET);
+
+  if (file_size <= 0)
+  {
+    ESP_LOGE(TAG, "File size error: %ld", file_size);
+    fclose(file);
+    return file_size;
+  }
+
+  fclose(file);
+  return file_size;
+}
 
 void CryptoApiCommons::print_hex(const uint8_t *data, size_t length)
 {

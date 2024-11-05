@@ -9,28 +9,31 @@
 #include <wolfssl/wolfcrypt/ed448.h>
 #include <wolfssl/wolfcrypt/asn_public.h>
 #include "CryptoApiCommons.h"
+#include "ICryptoModule.h"
 
 #define MY_ED25519_KEY_SIZE 32
 #define MY_ED448_KEY_SIZE 57
 
-class WolfsslModule
+class WolfsslModule : public ICryptoModule
 {
 public:
   WolfsslModule(CryptoApiCommons &commons);
 
   int init(Algorithms algorithm, Hashes hash, size_t length_of_shake256);
-  int init(Algorithms algorithm, Hashes hash);
   int get_signature_size();
 
   int gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent);
   int gen_keys();
 
-  int sign(const byte *message, word32 message_length, byte *signature, word32 *signature_length);
-  int verify(const byte *message, word32 message_length, byte *signature, word32 signature_length);
+  int sign(const unsigned char *message, size_t message_length, unsigned char *signature, size_t *signature_length);
+  int verify(const unsigned char *message, size_t message_length, unsigned char *signature, size_t signature_length);
   void close();
 
-  int hash_message(const byte *message, word32 message_len, byte *hash);
-  int get_pub_key(word32 pub_key_length, byte *pem_pub_key);
+  int hash_message(const unsigned char *message, size_t message_length, unsigned char *hash);
+
+  size_t get_public_key_size();
+  size_t get_public_key_pem_size();
+  int get_public_key_pem(unsigned char *public_key_pem);
 
 private:
   CryptoApiCommons &commons;
@@ -43,6 +46,7 @@ private:
 
   int get_key_size(int curve_id);
   int get_ecc_curve_id();
+  size_t get_public_key_der_size();
 };
 
 #endif

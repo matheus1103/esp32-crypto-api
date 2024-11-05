@@ -3,7 +3,7 @@
 #include "esp_system.h"
 #include "esp_timer.h"
 #include "esp_log.h"
-// #include <string>
+#include "esp_littlefs.h"
 
 #ifndef CRYPTO_API_COMMONS
 #define CRYPTO_API_COMMONS
@@ -36,8 +36,6 @@ public:
   Hashes get_chosen_hash();
   void set_chosen_hash(Hashes hash);
   void set_shake256_hash_length(size_t length);
-  void save_pub_key(const char *pubkey_filename, char *public_key_pem, const int buffer_length);
-  // std::string load_pub_key(const char *pubkey_filename);
   void print_hex(const uint8_t *data, size_t length);
   void log_success(const char *msg);
   void log_error(const char *msg);
@@ -45,10 +43,18 @@ public:
   void print_used_memory(unsigned long initial, unsigned long final, const char *label);
   size_t get_hash_length();
 
+  void init_littlefs();
+  void close_littlefs();
+  void write_file(const char *file_path, const unsigned char *data);
+  void write_binary_file(const char *file_path, const unsigned char *data, size_t data_len);
+  void read_file(const char *file_path, unsigned char *buffer, size_t buffer_size);
+  long get_file_size(const char *file_path);
+
 private:
   Algorithms chosen_algorithm;
   Hashes chosen_hash;
   size_t shake256_hash_length;
+  esp_vfs_littlefs_conf_t conf;
 };
 
 #endif

@@ -1,6 +1,7 @@
 #include "MicroeccModule.h"
 #include "MbedtlsModule.h"
 #include "esp_random.h"
+#include <string.h>
 
 static const char *TAG = "MicroeccModule";
 
@@ -11,7 +12,7 @@ MicroeccModule::MicroeccModule(CryptoApiCommons &commons) : commons(commons)
 
 const struct uECC_Curve_t *curve = uECC_secp256r1();
 
-int MicroeccModule::init(Hashes hash)
+int MicroeccModule::init(Algorithms _, Hashes hash, size_t __)
 {
   commons.set_chosen_hash(hash);
 
@@ -23,16 +24,26 @@ int MicroeccModule::init(Hashes hash)
   return 0;
 }
 
+int MicroeccModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
+{
+  return -1;
+}
+
+int MicroeccModule::get_signature_size()
+{
+  return 64;
+}
+
 int MicroeccModule::gen_keys()
 {
   int initial_memory = esp_get_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
 
-  size_t private_key_size = MY_ECC_256_KEY_SIZE;
-  size_t public_key_size = private_key_size * 2;
+  size_t private_key_size = MY_ECC_256_PRIVATE_KEY_SIZE;
+  size_t public_key_size = MY_ECC_256_PUBLIC_KEY_SIZE;
 
-  private_key = (uint8_t *)malloc(private_key_size * sizeof(uint8_t));
-  public_key = (uint8_t *)malloc(public_key_size * sizeof(uint8_t));
+  private_key = (unsigned char *)malloc(private_key_size * sizeof(unsigned char));
+  public_key = (unsigned char *)malloc(public_key_size * sizeof(unsigned char));
 
   int ret = uECC_make_key(public_key, private_key, uECC_secp256r1());
   if (ret == 0)
@@ -47,14 +58,53 @@ int MicroeccModule::gen_keys()
   commons.print_elapsed_time(start_time, end_time, "micro_gen_keys");
   commons.print_used_memory(initial_memory, final_memory, "micro_gen_keys");
 
-  commons.print_hex(private_key, private_key_size);
-  commons.print_hex(public_key, public_key_size);
+  ESP_LOG_BUFFER_HEX("public_key", this->public_key, public_key_size);
+  ESP_LOG_BUFFER_HEX("private_key", this->private_key, private_key_size);
 
   commons.log_success("gen_keys");
   return 0;
 }
 
-int MicroeccModule::sign(const uint8_t *message, size_t message_length, uint8_t *signature)
+int MicroeccModule::get_public_key_pem(unsigned char *public_key_pem)
+{
+  return public_key_to_pem_format(public_key_pem);
+}
+
+int MicroeccModule::public_key_to_pem_format(unsigned char *public_key_buffer)
+{
+  size_t base64_len = 89;
+  unsigned char *base64_output = (unsigned char *)malloc(base64_len * sizeof(unsigned char));
+
+  size_t olen = 0;
+  int ret = mbedtls_module->base64_encode(base64_output, base64_len, &olen, this->public_key, get_public_key_size());
+  if (ret != 0)
+  {
+    ESP_LOGE(TAG, "Failed to encode public key to Base64 (error %d)", ret);
+    return ret;
+  }
+
+  std::string pem_content = "-----BEGIN PUBLIC KEY-----\n";
+  pem_content.append(reinterpret_cast<char *>(base64_output), olen);
+
+  // Insert line breaks every 64 characters
+  size_t line_length = 64;
+  for (size_t i = line_length; i < pem_content.size(); i += line_length + 1)
+  {
+    pem_content.insert(i, "\n");
+  }
+
+  pem_content += "\n-----END PUBLIC KEY-----\n";
+
+  memcpy(public_key_buffer, pem_content.c_str(), pem_content.size() + 1); // +1 to include null terminator
+  return 0;
+}
+
+size_t MicroeccModule::get_public_key_pem_size()
+{
+  return 142;
+}
+
+int MicroeccModule::sign(const unsigned char *message, size_t message_length, unsigned char *signature, size_t *_)
 {
   int initial_memory = esp_get_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
@@ -88,7 +138,7 @@ int MicroeccModule::sign(const uint8_t *message, size_t message_length, uint8_t 
   return 0;
 }
 
-int MicroeccModule::verify(const uint8_t *message, size_t message_length, const uint8_t *signature)
+int MicroeccModule::verify(const unsigned char *message, size_t message_length, unsigned char *signature, size_t __)
 {
   int initial_memory = esp_get_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
@@ -127,6 +177,11 @@ void MicroeccModule::close()
   free(private_key);
   free(public_key);
   ESP_LOGI(TAG, "> microecc closed.");
+}
+
+size_t MicroeccModule::get_public_key_size()
+{
+  return MY_ECC_256_PUBLIC_KEY_SIZE;
 }
 
 int MicroeccModule::rng_function(uint8_t *dest, unsigned size)

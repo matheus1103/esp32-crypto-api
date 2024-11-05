@@ -6,19 +6,9 @@ WolfsslModule::WolfsslModule(CryptoApiCommons &commons) : commons(commons) {}
 
 int WolfsslModule::init(Algorithms algorithm, Hashes hash, size_t length_of_shake256)
 {
-  commons.set_shake256_hash_length(length_of_shake256);
-  return this->init(algorithm, hash);
-}
-
-int WolfsslModule::init(Algorithms algorithm, Hashes hash)
-{
   commons.set_chosen_algorithm(algorithm);
   commons.set_chosen_hash(hash);
-
-  // if (!SPIFFS.begin(true))
-  // {
-  //   commons.log_error("SPIFFS.begin");
-  // }
+  commons.set_shake256_hash_length(length_of_shake256);
 
   int initial_memory = esp_get_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
@@ -109,6 +99,7 @@ int WolfsslModule::gen_keys()
   case ECDSA_BP512R1:
   case ECDSA_SECP256R1:
   case ECDSA_SECP521R1:
+  default:
     ret = wc_ecc_make_key_ex(rng, key_size, wolf_ecc_key, curve_id);
     if (ret != 0)
     {
@@ -160,7 +151,7 @@ int WolfsslModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
   return 0;
 }
 
-int WolfsslModule::sign(const byte *message, word32 message_length, byte *signature, word32 *signature_length)
+int WolfsslModule::sign(const unsigned char *message, size_t message_length, unsigned char *signature, size_t *signature_length)
 {
   int initial_memory = esp_get_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
@@ -226,7 +217,7 @@ int WolfsslModule::sign(const byte *message, word32 message_length, byte *signat
   return 0;
 }
 
-int WolfsslModule::verify(const byte *message, word32 message_length, byte *signature, word32 signature_length)
+int WolfsslModule::verify(const unsigned char *message, size_t message_length, unsigned char *signature, size_t signature_length)
 {
   int initial_memory = esp_get_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
@@ -346,11 +337,15 @@ int WolfsslModule::get_key_size(int curve_id)
 {
   if (commons.get_chosen_algorithm() == Algorithms::EDDSA_25519)
   {
-    return MY_ED25519_KEY_SIZE;
+    return ED25519_PUB_KEY_SIZE;
   }
   else if (commons.get_chosen_algorithm() == Algorithms::EDDSA_448)
   {
-    return MY_ED448_KEY_SIZE;
+    return ED448_PUB_KEY_SIZE;
+  }
+  else if (commons.get_chosen_algorithm() == Algorithms::RSA)
+  {
+    return rsa_key_size / 8;
   }
   else
   {
@@ -377,26 +372,26 @@ int WolfsslModule::get_ecc_curve_id()
   }
 }
 
-int WolfsslModule::hash_message(const byte *message, word32 message_len, byte *hash)
+int WolfsslModule::hash_message(const unsigned char *message, size_t message_len, unsigned char *hash)
 {
-  int ret;
   switch (commons.get_chosen_hash())
   {
   case Hashes::MY_SHA_256:
-    ret = wc_Sha256Hash(message, message_len, hash);
-    break;
+    return wc_Sha256Hash(message, message_len, hash);
   case Hashes::MY_SHA_512:
-    ret = wc_Sha512Hash(message, message_len, hash);
-    break;
+    return wc_Sha512Hash(message, message_len, hash);
   case Hashes::MY_SHA3_256:
-    ret = wc_Sha3_256Hash(message, message_len, hash);
-    break;
+    return wc_Sha3_256Hash(message, message_len, hash);
   case Hashes::MY_SHAKE_256:
-    ret = wc_Shake256Hash(message, message_len, hash, commons.get_hash_length());
-    break;
+    return wc_Shake256Hash(message, message_len, hash, commons.get_hash_length());
+  default:
+    return wc_Sha256Hash(message, message_len, hash);
   }
+}
 
-  return ret;
+size_t WolfsslModule::get_public_key_size()
+{
+  return get_key_size(get_ecc_curve_id());
 }
 
 int WolfsslModule::get_signature_size()
@@ -417,21 +412,21 @@ int WolfsslModule::get_signature_size()
   return ECC_MAX_SIG_SIZE;
 }
 
-int WolfsslModule::get_pub_key(word32 pub_key_length, byte *pem_pub_key)
+int WolfsslModule::get_public_key_pem(unsigned char *public_key_pem)
 {
   int ret;
 
   int initial_memory = esp_get_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
 
-  word32 pem_length = pub_key_length * 2;
-  byte *der_pub_key = (byte *)malloc(pub_key_length);
+  size_t der_pub_key_size = get_public_key_der_size();
+  unsigned char *der_pub_key = (unsigned char *)malloc(der_pub_key_size * sizeof(unsigned char));
   CertType cert_type;
 
   switch (commons.get_chosen_algorithm())
   {
   case EDDSA_25519:
-    ret = wc_ed25519_export_public(wolf_ed25519_key, der_pub_key, &pub_key_length);
+    ret = wc_ed25519_export_public(wolf_ed25519_key, der_pub_key, &der_pub_key_size);
     cert_type = PUBLICKEY_TYPE;
     if (ret != 0)
     {
@@ -440,7 +435,7 @@ int WolfsslModule::get_pub_key(word32 pub_key_length, byte *pem_pub_key)
     }
     break;
   case RSA:
-    ret = wc_RsaKeyToPublicDer(wolf_rsa_key, der_pub_key, pub_key_length);
+    ret = wc_RsaKeyToPublicDer(wolf_rsa_key, der_pub_key, der_pub_key_size);
     cert_type = RSA_PUBLICKEY_TYPE;
 
     if (ret < 0)
@@ -450,14 +445,15 @@ int WolfsslModule::get_pub_key(word32 pub_key_length, byte *pem_pub_key)
     }
     else
     {
-      pub_key_length = ret;
+      der_pub_key_size = ret;
     }
     break;
   case ECDSA_BP256R1:
   case ECDSA_BP512R1:
   case ECDSA_SECP256R1:
   case ECDSA_SECP521R1:
-    ret = wc_EccPublicKeyToDer(wolf_ecc_key, der_pub_key, pub_key_length, 0);
+  default:
+    ret = wc_EccPublicKeyToDer(wolf_ecc_key, der_pub_key, der_pub_key_size, 0);
     cert_type = ECC_PUBLICKEY_TYPE;
     if (ret < 0)
     {
@@ -466,11 +462,11 @@ int WolfsslModule::get_pub_key(word32 pub_key_length, byte *pem_pub_key)
     }
     else
     {
-      pub_key_length = ret;
+      der_pub_key_size = ret;
     }
     break;
   case EDDSA_448:
-    ret = wc_ed448_export_public(wolf_ed448_key, der_pub_key, &pub_key_length);
+    ret = wc_ed448_export_public(wolf_ed448_key, der_pub_key, &der_pub_key_size);
     cert_type = PUBLICKEY_TYPE;
     if (ret != 0)
     {
@@ -480,17 +476,14 @@ int WolfsslModule::get_pub_key(word32 pub_key_length, byte *pem_pub_key)
     break;
   }
 
-  // Serial.print("pub key length: ");
-  // Serial.println(pub_key_length);
-  // Serial.print("pem length: ");
-  // Serial.println(pem_length);
-
-  ret = wc_DerToPem(der_pub_key, pub_key_length, pem_pub_key, pem_length, cert_type);
+  ret = wc_DerToPem(der_pub_key, der_pub_key_size, public_key_pem, get_public_key_pem_size(), cert_type);
   if (ret < 0)
   {
     commons.log_error("wc_DerToPem");
     return ret;
   }
+
+  public_key_pem[get_public_key_pem_size()] = '\0';
 
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_free_heap_size();
@@ -498,8 +491,62 @@ int WolfsslModule::get_pub_key(word32 pub_key_length, byte *pem_pub_key)
   commons.print_elapsed_time(start_time, end_time, "get_pub_key");
   commons.print_used_memory(initial_memory, final_memory, "get_pub_key");
 
-  ESP_LOGI(TAG, "> Public key in PEM format:");
-  ESP_LOGI(TAG, "%s", (char *)pem_pub_key);
-
+  // ESP_LOGI(TAG, "Public key in PEM format: \n%s", public_key_pem);
   return 0;
+}
+
+size_t WolfsslModule::get_public_key_pem_size()
+{
+  if (commons.get_chosen_algorithm() == Algorithms::EDDSA_25519)
+  {
+    return 97;
+  }
+  else if (commons.get_chosen_algorithm() == Algorithms::EDDSA_448)
+  {
+    return 130;
+  }
+  else if (commons.get_chosen_algorithm() == Algorithms::ECDSA_SECP256R1 || commons.get_chosen_algorithm() == Algorithms::ECDSA_BP256R1)
+  {
+    return 142;
+  }
+  else if (commons.get_chosen_algorithm() == Algorithms::ECDSA_SECP521R1 || commons.get_chosen_algorithm() == Algorithms::ECDSA_BP512R1)
+  {
+    return 235;
+  }
+  else if (rsa_key_size == 2048)
+  {
+    return 459;
+  }
+  else
+  {
+    return 808;
+  }
+}
+
+size_t WolfsslModule::get_public_key_der_size()
+{
+  if (commons.get_chosen_algorithm() == Algorithms::EDDSA_25519)
+  {
+    return 32;
+  }
+  else if (commons.get_chosen_algorithm() == Algorithms::EDDSA_448)
+  {
+    return 57;
+  }
+  else if (commons.get_chosen_algorithm() == Algorithms::ECDSA_SECP256R1 || commons.get_chosen_algorithm() == Algorithms::ECDSA_BP256R1)
+  {
+    return 65;
+  }
+  else if (commons.get_chosen_algorithm() == Algorithms::ECDSA_SECP521R1 || commons.get_chosen_algorithm() == Algorithms::ECDSA_BP512R1)
+  {
+    return 133;
+  }
+  else if (rsa_key_size == 2048)
+  {
+    return 294;
+  }
+  else
+  {
+    return 550;
+  }
 }
