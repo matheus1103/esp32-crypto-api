@@ -36,7 +36,6 @@ public:
   Hashes get_chosen_hash();
   void set_chosen_hash(Hashes hash);
   void set_shake256_hash_length(size_t length);
-  void print_hex(const uint8_t *data, size_t length);
   void log_success(const char *msg);
   void log_error(const char *msg);
   void print_elapsed_time(unsigned long start, unsigned long end, const char *label);

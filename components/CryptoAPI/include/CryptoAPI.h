@@ -41,16 +41,16 @@ public:
 
   // file operations:
 
-  void save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size);
-  void save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size);
-  void save_signature(const char *file_path, const unsigned char *signature, size_t sig_len);
+  // void save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size);
+  // void save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size);
+  // void save_signature(const char *file_path, const unsigned char *signature, size_t sig_len);
 
-  void load_private_key(const char *file_path, unsigned char *private_key, size_t file_size);
-  void load_public_key(const char *file_path, unsigned char *public_key, size_t file_size);
-  void load_signature(const char *file_path, unsigned char *signature, size_t file_size);
+  // void load_private_key(const char *file_path, unsigned char *private_key, size_t file_size);
+  // void load_public_key(const char *file_path, unsigned char *public_key, size_t file_size);
+  // void load_signature(const char *file_path, unsigned char *signature, size_t file_size);
 
-  long get_file_size(const char *file_path);
-  size_t get_private_key_size();
+  // long get_file_size(const char *file_path);
+  // size_t get_private_key_size();
 
 private:
   CryptoApiCommons commons;

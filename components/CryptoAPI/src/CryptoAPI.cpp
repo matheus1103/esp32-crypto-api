@@ -9,7 +9,7 @@ CryptoAPI::CryptoAPI()
 {
   mbedtls_module = new MbedtlsModule(commons);
   wolfssl_module = new WolfsslModule(commons);
-  microecc_module = new MicroeccModule(commons);
+  microecc_module = new MicroeccModule(commons, *mbedtls_module);
 }
 
 CryptoAPI::~CryptoAPI()
@@ -153,129 +153,129 @@ void CryptoAPI::close()
   microecc_module->close();
 }
 
-void CryptoAPI::save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size)
-{
-  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
-  {
-    this->mbedtls_module->save_private_key(file_path, private_key, private_key_size);
-    return;
-  }
+// void CryptoAPI::save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size)
+// {
+//   if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+//   {
+//     this->mbedtls_module->save_private_key(file_path, private_key, private_key_size);
+//     return;
+//   }
 
-  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
-  {
-    // todo wolfssl
-    return;
-  }
+//   if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+//   {
+//     // todo wolfssl
+//     return;
+//   }
 
-  // todo microecc
-}
+//   // todo microecc
+// }
 
-void CryptoAPI::save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size)
-{
-  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
-  {
-    this->mbedtls_module->save_public_key(file_path, public_key, public_key_size);
-    return;
-  }
+// void CryptoAPI::save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size)
+// {
+//   if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+//   {
+//     this->mbedtls_module->save_public_key(file_path, public_key, public_key_size);
+//     return;
+//   }
 
-  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
-  {
-    // todo wolfssl
-    return;
-  }
+//   if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+//   {
+//     // todo wolfssl
+//     return;
+//   }
 
-  // todo microecc
-}
+//   // todo microecc
+// }
 
-void CryptoAPI::save_signature(const char *file_path, const unsigned char *signature, size_t sig_len)
-{
-  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
-  {
-    this->mbedtls_module->save_signature(file_path, signature, sig_len);
-    return;
-  }
+// void CryptoAPI::save_signature(const char *file_path, const unsigned char *signature, size_t sig_len)
+// {
+//   if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+//   {
+//     this->mbedtls_module->save_signature(file_path, signature, sig_len);
+//     return;
+//   }
 
-  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
-  {
-    // todo wolfssl
-    return;
-  }
+//   if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+//   {
+//     // todo wolfssl
+//     return;
+//   }
 
-  // todo microecc
-}
+//   // todo microecc
+// }
 
-void CryptoAPI::load_private_key(const char *file_path, unsigned char *private_key, size_t file_size)
-{
-  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
-  {
-    this->mbedtls_module->load_private_key(file_path, private_key, file_size);
-    return;
-  }
+// void CryptoAPI::load_private_key(const char *file_path, unsigned char *private_key, size_t file_size)
+// {
+//   if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+//   {
+//     this->mbedtls_module->load_private_key(file_path, private_key, file_size);
+//     return;
+//   }
 
-  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
-  {
-    // todo wolfssl
-    return;
-  }
+//   if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+//   {
+//     // todo wolfssl
+//     return;
+//   }
 
-  // todo microecc
-}
+//   // todo microecc
+// }
 
-void CryptoAPI::load_public_key(const char *file_path, unsigned char *public_key, size_t file_size)
-{
-  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
-  {
-    this->mbedtls_module->load_public_key(file_path, public_key, file_size);
-    return;
-  }
+// void CryptoAPI::load_public_key(const char *file_path, unsigned char *public_key, size_t file_size)
+// {
+//   if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+//   {
+//     this->mbedtls_module->load_public_key(file_path, public_key, file_size);
+//     return;
+//   }
 
-  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
-  {
-    // todo wolfssl
-    return;
-  }
+//   if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+//   {
+//     // todo wolfssl
+//     return;
+//   }
 
-  // todo microecc
-}
+//   // todo microecc
+// }
 
-void CryptoAPI::load_signature(const char *file_path, unsigned char *signature, size_t file_size)
-{
-  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
-  {
-    this->mbedtls_module->load_signature(file_path, signature, file_size);
-    return;
-  }
+// void CryptoAPI::load_signature(const char *file_path, unsigned char *signature, size_t file_size)
+// {
+//   if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+//   {
+//     this->mbedtls_module->load_signature(file_path, signature, file_size);
+//     return;
+//   }
 
-  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
-  {
-    // todo wolfssl
-    return;
-  }
+//   if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+//   {
+//     // todo wolfssl
+//     return;
+//   }
 
-  // todo microecc
-}
+//   // todo microecc
+// }
 
-long CryptoAPI::get_file_size(const char *file_path)
-{
-  return commons.get_file_size(file_path);
-}
+// long CryptoAPI::get_file_size(const char *file_path)
+// {
+//   return commons.get_file_size(file_path);
+// }
 
-size_t CryptoAPI::get_private_key_size()
-{
-  if (get_chosen_library() == Libraries::MBEDTLS_LIB)
-  {
-    return this->mbedtls_module->get_private_key_size();
-  }
+// size_t CryptoAPI::get_private_key_size()
+// {
+//   if (get_chosen_library() == Libraries::MBEDTLS_LIB)
+//   {
+//     return this->mbedtls_module->get_private_key_size();
+//   }
 
-  if (get_chosen_library() == Libraries::WOLFSSL_LIB)
-  {
-    // todo wolfssl
-    return 0;
-  }
+//   if (get_chosen_library() == Libraries::WOLFSSL_LIB)
+//   {
+//     // todo wolfssl
+//     return 0;
+//   }
 
-  // todo microecc
-  return 0;
-}
+//   // todo microecc
+//   return 0;
+// }
 
 size_t CryptoAPI::get_public_key_size()
 {

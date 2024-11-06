@@ -180,12 +180,6 @@ long CryptoApiCommons::get_file_size(const char *file_path)
   return file_size;
 }
 
-void CryptoApiCommons::print_hex(const uint8_t *data, size_t length)
-{
-  // Use ESP_LOG_BUFFER_HEX to log the hex representation of a buffer
-  ESP_LOG_BUFFER_HEX(TAG, data, length);
-}
-
 void CryptoApiCommons::log_success(const char *msg)
 {
   ESP_LOGI(TAG, "SUCCESS AT %s", msg);

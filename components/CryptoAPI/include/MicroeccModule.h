@@ -13,7 +13,7 @@ class MbedtlsModule;
 class MicroeccModule : public ICryptoModule
 {
 public:
-  MicroeccModule(CryptoApiCommons &commons);
+  MicroeccModule(CryptoApiCommons &commons, MbedtlsModule &mbedtls_module);
 
   int init(Algorithms _, Hashes hash, size_t __);
   int get_signature_size();
@@ -31,10 +31,10 @@ public:
 
 private:
   CryptoApiCommons &commons;
-  MbedtlsModule *mbedtls_module;
+  MbedtlsModule &mbedtls_module;
   unsigned char *private_key;
   unsigned char *public_key;
-  static int rng_function(uint8_t *dest, unsigned size);
+  static int rng_function(unsigned char *dest, unsigned int size);
   int public_key_to_pem_format(unsigned char *public_key_buffer);
 };
 

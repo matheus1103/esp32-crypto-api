@@ -5,9 +5,8 @@
 
 static const char *TAG = "MicroeccModule";
 
-MicroeccModule::MicroeccModule(CryptoApiCommons &commons) : commons(commons)
+MicroeccModule::MicroeccModule(CryptoApiCommons &commons, MbedtlsModule &mbedtls_module) : commons(commons), mbedtls_module(mbedtls_module)
 {
-  mbedtls_module = new MbedtlsModule(commons);
 }
 
 const struct uECC_Curve_t *curve = uECC_secp256r1();
@@ -76,7 +75,7 @@ int MicroeccModule::public_key_to_pem_format(unsigned char *public_key_buffer)
   unsigned char *base64_output = (unsigned char *)malloc(base64_len * sizeof(unsigned char));
 
   size_t olen = 0;
-  int ret = mbedtls_module->base64_encode(base64_output, base64_len, &olen, this->public_key, get_public_key_size());
+  int ret = mbedtls_module.base64_encode(base64_output, base64_len, &olen, this->public_key, get_public_key_size());
   if (ret != 0)
   {
     ESP_LOGE(TAG, "Failed to encode public key to Base64 (error %d)", ret);
@@ -112,7 +111,7 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
   size_t hash_length = commons.get_hash_length();
   unsigned char *hash = (unsigned char *)malloc(hash_length * sizeof(unsigned char));
 
-  int ret = mbedtls_module->hash_message(message, message_length, hash);
+  int ret = mbedtls_module.hash_message(message, message_length, hash);
   if (ret != 0)
   {
     commons.log_error("hash_message");
@@ -146,7 +145,7 @@ int MicroeccModule::verify(const unsigned char *message, size_t message_length, 
   size_t hash_length = commons.get_hash_length();
   unsigned char *hash = (unsigned char *)malloc(hash_length * sizeof(unsigned char));
 
-  int ret = mbedtls_module->hash_message(message, message_length, hash);
+  int ret = mbedtls_module.hash_message(message, message_length, hash);
   if (ret != 0)
   {
     commons.log_error("hash_message");
@@ -184,7 +183,7 @@ size_t MicroeccModule::get_public_key_size()
   return MY_ECC_256_PUBLIC_KEY_SIZE;
 }
 
-int MicroeccModule::rng_function(uint8_t *dest, unsigned size)
+int MicroeccModule::rng_function(unsigned char *dest, unsigned int size)
 {
   // Fill dest with `size` random bytes
   while (size--)

@@ -239,85 +239,85 @@ int MbedtlsModule::base64_encode(unsigned char *dst, size_t dlen, size_t *olen, 
   return mbedtls_base64_encode(dst, dlen, olen, src, slen);
 }
 
-void MbedtlsModule::save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size)
-{
-  int ret = mbedtls_pk_write_key_pem(&pk_ctx, private_key, private_key_size);
-  if (ret == 0)
-  {
-    commons.write_file(file_path, private_key);
-  }
-  else
-  {
-    ESP_LOGE(TAG, "Failed to write private key to PEM format, mbedtls error code: %d", ret);
-  }
-}
+// void MbedtlsModule::save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size)
+// {
+//   int ret = mbedtls_pk_write_key_pem(&pk_ctx, private_key, private_key_size);
+//   if (ret == 0)
+//   {
+//     commons.write_file(file_path, private_key);
+//   }
+//   else
+//   {
+//     ESP_LOGE(TAG, "Failed to write private key to PEM format, mbedtls error code: %d", ret);
+//   }
+// }
 
-void MbedtlsModule::save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size)
-{
-  int ret = mbedtls_pk_write_pubkey_pem(&pk_ctx, public_key, public_key_size);
-  if (ret == 0)
-  {
-    commons.write_file(file_path, public_key);
-  }
-  else
-  {
-    ESP_LOGE(TAG, "Failed to write public key to PEM format, mbedtls error code: %d", ret);
-  }
-}
+// void MbedtlsModule::save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size)
+// {
+//   int ret = mbedtls_pk_write_pubkey_pem(&pk_ctx, public_key, public_key_size);
+//   if (ret == 0)
+//   {
+//     commons.write_file(file_path, public_key);
+//   }
+//   else
+//   {
+//     ESP_LOGE(TAG, "Failed to write public key to PEM format, mbedtls error code: %d", ret);
+//   }
+// }
 
-void MbedtlsModule::save_signature(const char *file_path, const unsigned char *signature, size_t sig_len)
-{
-  commons.write_binary_file(file_path, signature, sig_len);
-}
+// void MbedtlsModule::save_signature(const char *file_path, const unsigned char *signature, size_t sig_len)
+// {
+//   commons.write_binary_file(file_path, signature, sig_len);
+// }
 
-void MbedtlsModule::load_private_key(const char *file_path, unsigned char *private_key, size_t file_size)
-{
-  mbedtls_pk_free(&pk_ctx);
-  mbedtls_pk_init(&pk_ctx);
-  commons.read_file(file_path, private_key, file_size);
-  private_key[file_size] = '\0';
+// void MbedtlsModule::load_private_key(const char *file_path, unsigned char *private_key, size_t file_size)
+// {
+//   mbedtls_pk_free(&pk_ctx);
+//   mbedtls_pk_init(&pk_ctx);
+//   commons.read_file(file_path, private_key, file_size);
+//   private_key[file_size] = '\0';
 
-  int ret = mbedtls_pk_parse_key(&pk_ctx, private_key, file_size, NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
-  if (ret != 0)
-  {
-    ESP_LOGE(TAG, "Failed to load private key from PEM, mbedtls error code: %d", ret);
-  }
-}
+//   int ret = mbedtls_pk_parse_key(&pk_ctx, private_key, file_size, NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg);
+//   if (ret != 0)
+//   {
+//     ESP_LOGE(TAG, "Failed to load private key from PEM, mbedtls error code: %d", ret);
+//   }
+// }
 
-void MbedtlsModule::load_public_key(const char *file_path, unsigned char *public_key, size_t file_size)
-{
-  commons.read_file(file_path, public_key, file_size);
-  public_key[file_size] = '\0';
+// void MbedtlsModule::load_public_key(const char *file_path, unsigned char *public_key, size_t file_size)
+// {
+//   commons.read_file(file_path, public_key, file_size);
+//   public_key[file_size] = '\0';
 
-  int ret = mbedtls_pk_parse_public_key(&pk_ctx, public_key, file_size);
-  if (ret != 0)
-  {
-    ESP_LOGE(TAG, "Failed to load public key from PEM, mbedtls error code: %d", ret);
-  }
-}
+//   int ret = mbedtls_pk_parse_public_key(&pk_ctx, public_key, file_size);
+//   if (ret != 0)
+//   {
+//     ESP_LOGE(TAG, "Failed to load public key from PEM, mbedtls error code: %d", ret);
+//   }
+// }
 
-void MbedtlsModule::load_signature(const char *file_path, unsigned char *signature, size_t file_size)
-{
-  commons.read_file(file_path, signature, file_size);
-}
+// void MbedtlsModule::load_signature(const char *file_path, unsigned char *signature, size_t file_size)
+// {
+//   commons.read_file(file_path, signature, file_size);
+// }
 
-size_t MbedtlsModule::get_private_key_size()
-{
-  size_t private_key_size;
-  if (mbedtls_pk_get_type(&pk_ctx) == MBEDTLS_PK_ECKEY)
-  {
-    mbedtls_ecp_keypair *ec_key = mbedtls_pk_ec(pk_ctx);
-    private_key_size = (ec_key->private_grp.pbits + 7) / 8; // 7 is used to correctly round the byte up
-  }
-  else
-  {
-    mbedtls_rsa_context *rsa = mbedtls_pk_rsa(pk_ctx);
-    private_key_size = mbedtls_rsa_get_len(rsa) * 5; // 5 accounts for all of the components in pem format
-  }
+// size_t MbedtlsModule::get_private_key_size()
+// {
+//   size_t private_key_size;
+//   if (mbedtls_pk_get_type(&pk_ctx) == MBEDTLS_PK_ECKEY)
+//   {
+//     mbedtls_ecp_keypair *ec_key = mbedtls_pk_ec(pk_ctx);
+//     private_key_size = (ec_key->private_grp.pbits + 7) / 8; // 7 is used to correctly round the byte up
+//   }
+//   else
+//   {
+//     mbedtls_rsa_context *rsa = mbedtls_pk_rsa(pk_ctx);
+//     private_key_size = mbedtls_rsa_get_len(rsa) * 5; // 5 accounts for all of the components in pem format
+//   }
 
-  ESP_LOGI("ECC_KEY_INFO", "Private Key Size: %zu bytes", private_key_size);
-  return private_key_size;
-}
+// ESP_LOGI("ECC_KEY_INFO", "Private Key Size: %zu bytes", private_key_size);
+// return private_key_size;
+// }
 
 size_t MbedtlsModule::get_public_key_size()
 {
