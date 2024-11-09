@@ -8,12 +8,13 @@ This project aims to provide a quick way to benchmark between the most popular a
 
 ## Requirements
 
-- ESP-IDF: This project uses the ESP-IDF framework, so you'll need ESP-IDF installed and configured on your machine.
+- ESP-IDF: This project uses the ESP-IDF framework, so you'll need ESP-IDF installed and configured on your machine (follow the instructions on [ESP-IDF official documentation](https://docs.espressif.com/projects/esp-idf/en/v5.3.1/esp32/get-started/index.html) on how to do it)
+- VSCode: Although it is possible to execute this project without VSCode, it is highly recommended that you do use VSCode, due to it's ease of use.
 - WolfSSL: This project uses wolfssl, but in it's source code needs to be outside of it. Follow the instructions below on how to do it.
 
 ## Setting up WolfSSL
 
-1) Download the WolfSSL source code from it's GitHub page (v5.7.4-stable);
+1) Download the WolfSSL source code from it's [GitHub page (v5.7.4-stable)](https://github.com/wolfSSL/wolfssl/releases/tag/v5.7.4-stable);
 2) Unzip the downloaded zip file, and move it to your desired location (ex: ```C:/wolfssl-source```);
 3) Create a system-wide environment variable called ```WOLFSSL_ROOT```, pointing to the location of the wolfssl source code (ex: ```C:/wolfssl-source```);
 4) Restart your machine;
