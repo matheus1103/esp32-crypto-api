@@ -35,7 +35,10 @@
         "system_error": "cpp",
         "bitset": "cpp",
         "string_view": "cpp",
-        "regex": "cpp"
+        "regex": "cpp",
+        "vector": "c",
+        "memory": "c",
+        "variant": "c"
     },
     "idf.flashType": "UART"
 }

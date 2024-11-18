@@ -35,6 +35,16 @@ public:
   size_t get_public_key_pem_size();
   int get_public_key_pem(unsigned char *public_key_pem);
 
+  size_t get_private_key_size();
+  size_t get_private_key_pem_size();
+  int get_private_key_pem(unsigned char *private_key_pem);
+
+  void save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size);
+  void save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size);
+  void save_signature(const char *file_path, const unsigned char *signature, size_t sig_len);
+
+  void load_file(const char *file_path, unsigned char *buffer, size_t buffer_size);
+
 private:
   CryptoApiCommons &commons;
   WC_RNG *rng;
@@ -47,6 +57,7 @@ private:
   int get_key_size(int curve_id);
   int get_ecc_curve_id();
   size_t get_public_key_der_size();
+  size_t get_private_key_der_size();
 };
 
 #endif

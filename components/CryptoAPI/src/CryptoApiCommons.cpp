@@ -148,7 +148,7 @@ void CryptoApiCommons::read_file(const char *file_path, unsigned char *buffer, s
       return;
     }
 
-    ESP_LOGI(TAG, "Data loaded from %s", file_path);
+    ESP_LOGI(TAG, "Loaded from %s:\n%s", file_path, buffer);
   }
   else
   {

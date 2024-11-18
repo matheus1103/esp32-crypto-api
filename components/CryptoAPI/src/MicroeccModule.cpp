@@ -13,11 +13,20 @@ const struct uECC_Curve_t *curve = uECC_secp256r1();
 
 int MicroeccModule::init(Algorithms _, Hashes hash, size_t __)
 {
+  int initial_memory = esp_get_free_heap_size();
+  unsigned long start_time = esp_timer_get_time() / 1000;
+
   commons.set_chosen_hash(hash);
 
   unsigned int seed = esp_random();
   srandom(seed);
   uECC_set_rng(&MicroeccModule::rng_function);
+
+  unsigned long end_time = esp_timer_get_time() / 1000;
+  int final_memory = esp_get_free_heap_size();
+
+  commons.print_elapsed_time(start_time, end_time, "init");
+  commons.print_used_memory(initial_memory, final_memory, "init");
 
   commons.log_success("init");
   return 0;
@@ -75,7 +84,7 @@ int MicroeccModule::public_key_to_pem_format(unsigned char *public_key_buffer)
   unsigned char *base64_output = (unsigned char *)malloc(base64_len * sizeof(unsigned char));
 
   size_t olen = 0;
-  int ret = mbedtls_module.base64_encode(base64_output, base64_len, &olen, this->public_key, get_public_key_size());
+  int ret = mbedtls_module.base64_encode(base64_output, base64_len, &olen, this->public_key, get_private_key_size());
   if (ret != 0)
   {
     ESP_LOGE(TAG, "Failed to encode public key to Base64 (error %d)", ret);
@@ -103,10 +112,42 @@ size_t MicroeccModule::get_public_key_pem_size()
   return 142;
 }
 
+int MicroeccModule::private_key_to_pem_format(unsigned char *private_key_buffer)
+{
+  size_t base64_len = 89; // Adjust size based on expected private key size
+  unsigned char *base64_output = (unsigned char *)malloc(base64_len * sizeof(unsigned char));
+
+  size_t olen = 0;
+  int ret = mbedtls_module.base64_encode(base64_output, base64_len, &olen, this->private_key, get_private_key_size());
+  if (ret != 0)
+  {
+    ESP_LOGE(TAG, "Failed to encode private key to Base64 (error %d)", ret);
+    return ret;
+  }
+
+  std::string pem_content = "-----BEGIN PRIVATE KEY-----\n";
+  pem_content.append(reinterpret_cast<char *>(base64_output), olen);
+
+  // Insert line breaks every 64 characters
+  size_t line_length = 64;
+  for (size_t i = line_length; i < pem_content.size(); i += line_length + 1)
+  {
+    pem_content.insert(i, "\n");
+  }
+
+  pem_content += "\n-----END PRIVATE KEY-----\n";
+
+  // Copy PEM content to the output buffer
+  memcpy(private_key_buffer, pem_content.c_str(), pem_content.size() + 1); // +1 to include null terminator
+
+  // free(base64_output);
+  return 0;
+}
+
 int MicroeccModule::sign(const unsigned char *message, size_t message_length, unsigned char *signature, size_t *_)
 {
-  int initial_memory = esp_get_free_heap_size();
-  unsigned long start_time = esp_timer_get_time() / 1000;
+  int hash_initial_memory = esp_get_free_heap_size();
+  unsigned long hash_start_time = esp_timer_get_time() / 1000;
 
   size_t hash_length = commons.get_hash_length();
   unsigned char *hash = (unsigned char *)malloc(hash_length * sizeof(unsigned char));
@@ -117,6 +158,15 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
     commons.log_error("hash_message");
     return ret;
   }
+
+  unsigned long hash_end_time = esp_timer_get_time() / 1000;
+  int hash_final_memory = esp_get_free_heap_size();
+
+  commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
+  commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
+
+  int initial_memory = esp_get_free_heap_size();
+  unsigned long start_time = esp_timer_get_time() / 1000;
 
   ret = uECC_sign(private_key, hash, hash_length, signature, uECC_secp256r1());
   if (ret == 0)
@@ -139,8 +189,8 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
 
 int MicroeccModule::verify(const unsigned char *message, size_t message_length, unsigned char *signature, size_t __)
 {
-  int initial_memory = esp_get_free_heap_size();
-  unsigned long start_time = esp_timer_get_time() / 1000;
+  int hash_initial_memory = esp_get_free_heap_size();
+  unsigned long hash_start_time = esp_timer_get_time() / 1000;
 
   size_t hash_length = commons.get_hash_length();
   unsigned char *hash = (unsigned char *)malloc(hash_length * sizeof(unsigned char));
@@ -151,6 +201,15 @@ int MicroeccModule::verify(const unsigned char *message, size_t message_length, 
     commons.log_error("hash_message");
     return ret;
   }
+
+  unsigned long hash_end_time = esp_timer_get_time() / 1000;
+  int hash_final_memory = esp_get_free_heap_size();
+
+  commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
+  commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
+
+  int initial_memory = esp_get_free_heap_size();
+  unsigned long start_time = esp_timer_get_time() / 1000;
 
   ret = uECC_verify(public_key, hash, hash_length, signature, uECC_secp256r1());
   if (ret != 1)
@@ -183,6 +242,11 @@ size_t MicroeccModule::get_public_key_size()
   return MY_ECC_256_PUBLIC_KEY_SIZE;
 }
 
+size_t MicroeccModule::get_private_key_size()
+{
+  return MY_ECC_256_PRIVATE_KEY_SIZE;
+}
+
 int MicroeccModule::rng_function(unsigned char *dest, unsigned int size)
 {
   // Fill dest with `size` random bytes
@@ -191,4 +255,40 @@ int MicroeccModule::rng_function(unsigned char *dest, unsigned int size)
     *dest++ = (uint8_t)(esp_random() & 0xFF); // Mask to get a byte (0-255)
   }
   return 1; // Return 1 to indicate success
+}
+
+void MicroeccModule::save_private_key(const char *file_path, unsigned char *private_key, size_t _)
+{
+  int ret = private_key_to_pem_format(private_key);
+  if (ret == 0)
+  {
+    commons.write_file(file_path, private_key);
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to save private key in PEM format, error code: %d", ret);
+  }
+}
+
+void MicroeccModule::save_public_key(const char *file_path, unsigned char *public_key, size_t _)
+{
+  int ret = public_key_to_pem_format(public_key);
+  if (ret == 0)
+  {
+    commons.write_file(file_path, public_key);
+  }
+  else
+  {
+    ESP_LOGE(TAG, "Failed to save public key in PEM format, error code: %d", ret);
+  }
+}
+
+void MicroeccModule::save_signature(const char *file_path, const unsigned char *signature, size_t sig_len)
+{
+  commons.write_binary_file(file_path, signature, sig_len);
+}
+
+void MicroeccModule::load_file(const char *file_path, unsigned char *buffer, size_t buffer_size)
+{
+  commons.read_file(file_path, buffer, buffer_size);
 }

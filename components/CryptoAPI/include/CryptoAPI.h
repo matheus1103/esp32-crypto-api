@@ -36,21 +36,17 @@ public:
   size_t get_public_key_pem_size();
   int get_public_key_pem(unsigned char *public_key_pem);
 
+  size_t get_private_key_size();
+
+  void save_private_key(const char *file_path, unsigned char *private_key, size_t _);
+  void save_public_key(const char *file_path, unsigned char *public_key, size_t _);
+  void save_signature(const char *file_path, const unsigned char *signature, size_t sig_len);
+
+  void load_file(const char *file_path, unsigned char *buffer, size_t buffer_size);
+  long get_file_size(const char *file_path);
+
   Algorithms get_chosen_algorithm();
   Libraries get_chosen_library();
-
-  // file operations:
-
-  // void save_private_key(const char *file_path, unsigned char *private_key, size_t private_key_size);
-  // void save_public_key(const char *file_path, unsigned char *public_key, size_t public_key_size);
-  // void save_signature(const char *file_path, const unsigned char *signature, size_t sig_len);
-
-  // void load_private_key(const char *file_path, unsigned char *private_key, size_t file_size);
-  // void load_public_key(const char *file_path, unsigned char *public_key, size_t file_size);
-  // void load_signature(const char *file_path, unsigned char *signature, size_t file_size);
-
-  // long get_file_size(const char *file_path);
-  // size_t get_private_key_size();
 
 private:
   CryptoApiCommons commons;
