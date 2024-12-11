@@ -10,8 +10,9 @@ MbedtlsModule::MbedtlsModule(CryptoApiCommons &commons) : commons(commons) {}
 
 int MbedtlsModule::init(Algorithms algorithm, Hashes hash, size_t _)
 {
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+  size_t cycle_count_before = esp_cpu_get_cycle_count();
 
   commons.set_chosen_algorithm(algorithm);
   commons.set_chosen_hash(hash);
@@ -47,10 +48,12 @@ int MbedtlsModule::init(Algorithms algorithm, Hashes hash, size_t _)
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  size_t cycle_count_after = esp_cpu_get_cycle_count();
 
-  commons.print_elapsed_time(start_time, end_time, "init");
-  commons.print_used_memory(initial_memory, final_memory, "init");
+  // commons.print_elapsed_time(start_time, end_time, "init");
+  // commons.print_used_memory(initial_memory, final_memory, "init");
+  // commons.print_total_cycles(cycle_count_before, cycle_count_after, "init");
 
   commons.log_success("init");
   return 0;
@@ -60,8 +63,9 @@ int MbedtlsModule::gen_keys()
 {
   mbedtls_ecp_group_id group_id = get_ecc_group_id();
 
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+  unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
   int ret = mbedtls_ecp_gen_key(group_id, mbedtls_pk_ec(pk_ctx), mbedtls_ctr_drbg_random, &ctr_drbg);
   if (ret != 0)
@@ -71,10 +75,12 @@ int MbedtlsModule::gen_keys()
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  unsigned long cycle_count_after = esp_cpu_get_cycle_count();
 
   commons.print_elapsed_time(start_time, end_time, "mbedtls_gen_keys");
   commons.print_used_memory(initial_memory, final_memory, "mbedtls_gen_keys");
+  commons.print_total_cycles(cycle_count_before, cycle_count_after, "mbedtls_gen_keys");
 
   commons.log_success("gen_keys");
   return 0;
@@ -84,8 +90,10 @@ int MbedtlsModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
 {
   this->rsa_key_size = rsa_key_size;
 
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+
+  size_t cycle_count_before = esp_cpu_get_cycle_count();
 
   int ret = mbedtls_rsa_gen_key(mbedtls_pk_rsa(pk_ctx), mbedtls_ctr_drbg_random, &ctr_drbg, rsa_key_size, rsa_exponent);
   if (ret != 0)
@@ -95,10 +103,12 @@ int MbedtlsModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  size_t cycle_count_after = esp_cpu_get_cycle_count();
 
   commons.print_elapsed_time(start_time, end_time, "mbedtls_gen_keys");
   commons.print_used_memory(initial_memory, final_memory, "mbedtls_gen_keys");
+  commons.print_total_cycles(cycle_count_before, cycle_count_after, "mbedtls_gen_keys");
 
   commons.log_success("gen_keys");
   return 0;
@@ -106,7 +116,7 @@ int MbedtlsModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
 
 int MbedtlsModule::sign(const unsigned char *message, size_t message_length, unsigned char *signature, size_t *signature_length)
 {
-  int hash_initial_memory = esp_get_free_heap_size();
+  int hash_initial_memory = esp_get_minimum_free_heap_size();
   unsigned long hash_start_time = esp_timer_get_time() / 1000;
 
   size_t hash_length = commons.get_hash_length();
@@ -120,13 +130,15 @@ int MbedtlsModule::sign(const unsigned char *message, size_t message_length, uns
   }
 
   unsigned long hash_end_time = esp_timer_get_time() / 1000;
-  int hash_final_memory = esp_get_free_heap_size();
+  int hash_final_memory = esp_get_minimum_free_heap_size();
 
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+
+  size_t cycle_count_before = esp_cpu_get_cycle_count();
 
   ret = mbedtls_pk_sign(&pk_ctx, get_hash_type(), hash, hash_length, signature, get_signature_size(), signature_length, mbedtls_ctr_drbg_random, &ctr_drbg);
   if (ret != 0)
@@ -136,10 +148,12 @@ int MbedtlsModule::sign(const unsigned char *message, size_t message_length, uns
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  size_t cycle_count_after = esp_cpu_get_cycle_count();
 
   commons.print_elapsed_time(start_time, end_time, "mbedtls_sign");
   commons.print_used_memory(initial_memory, final_memory, "mbedtls_sign");
+  commons.print_total_cycles(cycle_count_before, cycle_count_after, "mbedtls_sign");
 
   free(hash);
 
@@ -149,7 +163,7 @@ int MbedtlsModule::sign(const unsigned char *message, size_t message_length, uns
 
 int MbedtlsModule::verify(const unsigned char *message, size_t message_length, unsigned char *signature, size_t signature_length)
 {
-  int hash_initial_memory = esp_get_free_heap_size();
+  int hash_initial_memory = esp_get_minimum_free_heap_size();
   unsigned long hash_start_time = esp_timer_get_time() / 1000;
 
   size_t hash_length = commons.get_hash_length();
@@ -163,13 +177,15 @@ int MbedtlsModule::verify(const unsigned char *message, size_t message_length, u
   }
 
   unsigned long hash_end_time = esp_timer_get_time() / 1000;
-  int hash_final_memory = esp_get_free_heap_size();
+  int hash_final_memory = esp_get_minimum_free_heap_size();
 
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+
+  size_t cycle_count_before = esp_cpu_get_cycle_count();
 
   ret = mbedtls_pk_verify(&pk_ctx, get_hash_type(), hash, hash_length, signature, signature_length);
   if (ret != 0)
@@ -179,10 +195,12 @@ int MbedtlsModule::verify(const unsigned char *message, size_t message_length, u
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  size_t cycle_count_after = esp_cpu_get_cycle_count();
 
   commons.print_elapsed_time(start_time, end_time, "mbedtls_verify");
   commons.print_used_memory(initial_memory, final_memory, "mbedtls_verify");
+  commons.print_total_cycles(cycle_count_before, cycle_count_after, "mbedtls_verify");
 
   free(hash);
 

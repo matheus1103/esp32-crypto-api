@@ -13,8 +13,9 @@ const struct uECC_Curve_t *curve = uECC_secp256r1();
 
 int MicroeccModule::init(Algorithms _, Hashes hash, size_t __)
 {
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+  unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
   commons.set_chosen_hash(hash);
 
@@ -23,10 +24,12 @@ int MicroeccModule::init(Algorithms _, Hashes hash, size_t __)
   uECC_set_rng(&MicroeccModule::rng_function);
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  unsigned long cycle_count_after = esp_cpu_get_cycle_count();
 
-  commons.print_elapsed_time(start_time, end_time, "init");
-  commons.print_used_memory(initial_memory, final_memory, "init");
+  // commons.print_elapsed_time(start_time, end_time, "init");
+  // commons.print_used_memory(initial_memory, final_memory, "init");
+  // commons.print_total_cycles(cycle_count_before, cycle_count_after, "init");
 
   commons.log_success("init");
   return 0;
@@ -44,8 +47,9 @@ int MicroeccModule::get_signature_size()
 
 int MicroeccModule::gen_keys()
 {
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+  unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
   size_t private_key_size = MY_ECC_256_PRIVATE_KEY_SIZE;
   size_t public_key_size = MY_ECC_256_PUBLIC_KEY_SIZE;
@@ -61,10 +65,12 @@ int MicroeccModule::gen_keys()
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  unsigned long cycle_count_after = esp_cpu_get_cycle_count();
 
   commons.print_elapsed_time(start_time, end_time, "micro_gen_keys");
   commons.print_used_memory(initial_memory, final_memory, "micro_gen_keys");
+  commons.print_total_cycles(cycle_count_before, cycle_count_after, "micro_gen_keys");
 
   ESP_LOG_BUFFER_HEX("public_key", this->public_key, public_key_size);
   ESP_LOG_BUFFER_HEX("private_key", this->private_key, private_key_size);
@@ -146,7 +152,7 @@ int MicroeccModule::private_key_to_pem_format(unsigned char *private_key_buffer)
 
 int MicroeccModule::sign(const unsigned char *message, size_t message_length, unsigned char *signature, size_t *_)
 {
-  int hash_initial_memory = esp_get_free_heap_size();
+  int hash_initial_memory = esp_get_minimum_free_heap_size();
   unsigned long hash_start_time = esp_timer_get_time() / 1000;
 
   size_t hash_length = commons.get_hash_length();
@@ -160,13 +166,14 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
   }
 
   unsigned long hash_end_time = esp_timer_get_time() / 1000;
-  int hash_final_memory = esp_get_free_heap_size();
+  int hash_final_memory = esp_get_minimum_free_heap_size();
 
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+  unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
   ret = uECC_sign(private_key, hash, hash_length, signature, uECC_secp256r1());
   if (ret == 0)
@@ -176,10 +183,12 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  unsigned long cycle_count_after = esp_cpu_get_cycle_count();
 
   commons.print_elapsed_time(start_time, end_time, "micro_sign");
   commons.print_used_memory(initial_memory, final_memory, "micro_sign");
+  commons.print_total_cycles(cycle_count_before, cycle_count_after, "mbedtls_gen_keys");
 
   free(hash);
 
@@ -189,7 +198,7 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
 
 int MicroeccModule::verify(const unsigned char *message, size_t message_length, unsigned char *signature, size_t __)
 {
-  int hash_initial_memory = esp_get_free_heap_size();
+  int hash_initial_memory = esp_get_minimum_free_heap_size();
   unsigned long hash_start_time = esp_timer_get_time() / 1000;
 
   size_t hash_length = commons.get_hash_length();
@@ -203,13 +212,14 @@ int MicroeccModule::verify(const unsigned char *message, size_t message_length, 
   }
 
   unsigned long hash_end_time = esp_timer_get_time() / 1000;
-  int hash_final_memory = esp_get_free_heap_size();
+  int hash_final_memory = esp_get_minimum_free_heap_size();
 
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
-  int initial_memory = esp_get_free_heap_size();
+  int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
+  unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
   ret = uECC_verify(public_key, hash, hash_length, signature, uECC_secp256r1());
   if (ret != 1)
@@ -219,10 +229,12 @@ int MicroeccModule::verify(const unsigned char *message, size_t message_length, 
   }
 
   unsigned long end_time = esp_timer_get_time() / 1000;
-  int final_memory = esp_get_free_heap_size();
+  int final_memory = esp_get_minimum_free_heap_size();
+  unsigned long cycle_count_after = esp_cpu_get_cycle_count();
 
   commons.print_elapsed_time(start_time, end_time, "micro_verify");
   commons.print_used_memory(initial_memory, final_memory, "micro_verify");
+  commons.print_total_cycles(cycle_count_before, cycle_count_after, "mbedtls_gen_keys");
 
   free(hash);
 

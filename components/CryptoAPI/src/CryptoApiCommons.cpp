@@ -192,10 +192,15 @@ void CryptoApiCommons::log_error(const char *msg)
 
 void CryptoApiCommons::print_elapsed_time(unsigned long start, unsigned long end, const char *label)
 {
-  ESP_LOGI(TAG, "%s time: %lu ms", label, end - start);
+  ESP_LOGI(TAG, "\n\n%s time: %lu ms", label, end - start);
 }
 
 void CryptoApiCommons::print_used_memory(unsigned long initial, unsigned long final, const char *label)
 {
   ESP_LOGI(TAG, "%s memory: %lu bytes", label, initial - final);
+}
+
+void CryptoApiCommons::print_total_cycles(unsigned long initial, unsigned long final, const char *label)
+{
+  ESP_LOGI(TAG, "%s clock cycle count: %lu", label, final - initial);
 }

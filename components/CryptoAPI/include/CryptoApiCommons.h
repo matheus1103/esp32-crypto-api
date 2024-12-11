@@ -40,6 +40,7 @@ public:
   void log_error(const char *msg);
   void print_elapsed_time(unsigned long start, unsigned long end, const char *label);
   void print_used_memory(unsigned long initial, unsigned long final, const char *label);
+  void print_total_cycles(unsigned long initial, unsigned long final, const char *label);
   size_t get_hash_length();
 
   void init_littlefs();
