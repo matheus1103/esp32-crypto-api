@@ -339,7 +339,7 @@
 #define USE_CERT_BUFFERS_2048
 
 /* RSA_LOW_MEM: Half as much memory but twice as slow. */
-// #define RSA_LOW_MEM
+#define RSA_LOW_MEM
 
 /* optionally turn off SHA512/224 SHA512/256 */
 /* #define WOLFSSL_NOSHA512_224 */
@@ -535,7 +535,7 @@
     defined(WOLFSSL_SP_RISCV32)
 #endif
 
-// #define WOLFSSL_SMALL_STACK
+#define WOLFSSL_SMALL_STACK
 
 #define HAVE_VERSION_EXTENDED_INFO
 /* #define HAVE_WC_INTROSPECTION */

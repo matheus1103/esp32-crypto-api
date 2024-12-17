@@ -26,9 +26,10 @@ int WolfsslModule::init(Algorithms algorithm, Hashes hash, size_t length_of_shak
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
 
-  commons.print_elapsed_time(start_time, end_time, "init rng");
-  commons.print_used_memory(initial_memory, final_memory, "init rng");
+  // commons.print_elapsed_time(start_time, end_time, "init rng");
+  // commons.print_used_memory(initial_memory, final_memory, "init rng");
 
+  heap_caps_monitor_local_minimum_free_size_start();
   initial_memory = esp_get_minimum_free_heap_size();
   start_time = esp_timer_get_time() / 1000;
   size_t cycle_count_before = esp_cpu_get_cycle_count();
@@ -79,10 +80,11 @@ int WolfsslModule::init(Algorithms algorithm, Hashes hash, size_t length_of_shak
   end_time = esp_timer_get_time() / 1000;
   final_memory = esp_get_minimum_free_heap_size();
   size_t cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
-  commons.print_elapsed_time(start_time, end_time, "init key");
-  commons.print_used_memory(initial_memory, final_memory, "init key");
-  commons.print_total_cycles(cycle_count_before, cycle_count_after, "init key");
+  // commons.print_elapsed_time(start_time, end_time, "init key");
+  // commons.print_used_memory(initial_memory, final_memory, "init key");
+  // commons.print_total_cycles(cycle_count_before, cycle_count_after, "init key");
 
   commons.log_success("init");
   return 0;
@@ -94,6 +96,7 @@ int WolfsslModule::gen_keys()
   int curve_id = get_ecc_curve_id();
   int key_size = get_key_size(curve_id);
 
+  heap_caps_monitor_local_minimum_free_size_start();
   int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
   size_t cycle_count_before = esp_cpu_get_cycle_count();
@@ -133,6 +136,7 @@ int WolfsslModule::gen_keys()
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
   size_t cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
   commons.print_elapsed_time(start_time, end_time, "gen_keys");
   commons.print_used_memory(initial_memory, final_memory, "gen_keys");
@@ -144,6 +148,7 @@ int WolfsslModule::gen_keys()
 
 int WolfsslModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
 {
+  heap_caps_monitor_local_minimum_free_size_start();
   int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
@@ -160,6 +165,7 @@ int WolfsslModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
   size_t cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
   commons.print_elapsed_time(start_time, end_time, "gen_keys");
   commons.print_used_memory(initial_memory, final_memory, "gen_keys");
@@ -190,6 +196,7 @@ int WolfsslModule::sign(const unsigned char *message, size_t message_length, uns
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
+  heap_caps_monitor_local_minimum_free_size_start();
   int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
@@ -236,6 +243,7 @@ int WolfsslModule::sign(const unsigned char *message, size_t message_length, uns
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
   size_t cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
   commons.print_elapsed_time(start_time, end_time, "sign");
   commons.print_used_memory(initial_memory, final_memory, "sign");
@@ -268,6 +276,7 @@ int WolfsslModule::verify(const unsigned char *message, size_t message_length, u
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
+  heap_caps_monitor_local_minimum_free_size_start();
   int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
@@ -338,6 +347,7 @@ int WolfsslModule::verify(const unsigned char *message, size_t message_length, u
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
   size_t cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
   commons.print_elapsed_time(start_time, end_time, "verify");
   commons.print_used_memory(initial_memory, final_memory, "verify");

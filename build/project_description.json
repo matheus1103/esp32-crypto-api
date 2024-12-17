@@ -1,7 +1,7 @@
 {
     "version":            "1.1",
     "project_name":       "CryptoAPI",
-    "project_version":    "08c59bc-dirty",
+    "project_version":    "c327217-dirty",
     "project_path":       "C:/Users/Brist/Documents/TCC/codigo/esp-idf-code/CryptoAPI",
     "idf_path":           "C:/Espressif/frameworks/esp-idf-v5.3.1",
     "build_dir":          "C:/Users/Brist/Documents/TCC/codigo/esp-idf-code/CryptoAPI/build",

@@ -47,6 +47,7 @@ int MicroeccModule::get_signature_size()
 
 int MicroeccModule::gen_keys()
 {
+  heap_caps_monitor_local_minimum_free_size_start();
   int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
@@ -67,6 +68,7 @@ int MicroeccModule::gen_keys()
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
   unsigned long cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
   commons.print_elapsed_time(start_time, end_time, "micro_gen_keys");
   commons.print_used_memory(initial_memory, final_memory, "micro_gen_keys");
@@ -171,6 +173,7 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
+  heap_caps_monitor_local_minimum_free_size_start();
   int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
@@ -185,6 +188,7 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
   unsigned long cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
   commons.print_elapsed_time(start_time, end_time, "micro_sign");
   commons.print_used_memory(initial_memory, final_memory, "micro_sign");
@@ -217,6 +221,7 @@ int MicroeccModule::verify(const unsigned char *message, size_t message_length, 
   commons.print_elapsed_time(hash_start_time, hash_end_time, "hash_message");
   commons.print_used_memory(hash_initial_memory, hash_final_memory, "hash_message");
 
+  heap_caps_monitor_local_minimum_free_size_start();
   int initial_memory = esp_get_minimum_free_heap_size();
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
@@ -231,6 +236,7 @@ int MicroeccModule::verify(const unsigned char *message, size_t message_length, 
   unsigned long end_time = esp_timer_get_time() / 1000;
   int final_memory = esp_get_minimum_free_heap_size();
   unsigned long cycle_count_after = esp_cpu_get_cycle_count();
+  heap_caps_monitor_local_minimum_free_size_stop();
 
   commons.print_elapsed_time(start_time, end_time, "micro_verify");
   commons.print_used_memory(initial_memory, final_memory, "micro_verify");
