@@ -1,5 +1,6 @@
 # Build output directories
 /build/
+/managed_components/
 
 # Arquivos de configuração temporários
 /sdkconfig.old
