@@ -30,3 +30,26 @@
 *.exe
 *.out
 *.app
+
+# Build directories
+build/
+
+# VS Code settings
+.vscode/
+
+# ESP-IDF specific
+dependencies.lock
+sdkconfig
+sdkconfig.old
+
+# Clang
+.clangd
+
+# OS specific
+.DS_Store
+Thumbs.db
+
+# Editor backups
+*~
+*.swp
+*.swo
