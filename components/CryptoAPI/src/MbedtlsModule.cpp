@@ -3,6 +3,7 @@
 #include <mbedtls/sha256.h>
 #include <mbedtls/error.h>
 #include <mbedtls/base64.h>
+#include <esp_task_wdt.h>
 
 static const char *TAG = "MbedtlsModule";
 
@@ -68,7 +69,9 @@ int MbedtlsModule::gen_keys()
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
+  //esp_task_wdt_reset();
   int ret = mbedtls_ecp_gen_key(group_id, mbedtls_pk_ec(pk_ctx), mbedtls_ctr_drbg_random, &ctr_drbg);
+  //esp_task_wdt_reset();
   if (ret != 0)
   {
     commons.log_error("mbedtls_ecp_gen_key");
@@ -98,7 +101,9 @@ int MbedtlsModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
 
   size_t cycle_count_before = esp_cpu_get_cycle_count();
 
+  //esp_task_wdt_reset();
   int ret = mbedtls_rsa_gen_key(mbedtls_pk_rsa(pk_ctx), mbedtls_ctr_drbg_random, &ctr_drbg, rsa_key_size, rsa_exponent);
+  //esp_task_wdt_reset();
   if (ret != 0)
   {
     commons.log_error("mbedtls_rsa_gen_key");
@@ -145,7 +150,9 @@ int MbedtlsModule::sign(const unsigned char *message, size_t message_length, uns
 
   size_t cycle_count_before = esp_cpu_get_cycle_count();
 
+  //esp_task_wdt_reset();
   ret = mbedtls_pk_sign(&pk_ctx, get_hash_type(), hash, hash_length, signature, get_signature_size(), signature_length, mbedtls_ctr_drbg_random, &ctr_drbg);
+  //esp_task_wdt_reset();
   if (ret != 0)
   {
     commons.log_error("mbedtls_pk_sign");
@@ -194,7 +201,9 @@ int MbedtlsModule::verify(const unsigned char *message, size_t message_length, u
 
   size_t cycle_count_before = esp_cpu_get_cycle_count();
 
+  //esp_task_wdt_reset();
   ret = mbedtls_pk_verify(&pk_ctx, get_hash_type(), hash, hash_length, signature, signature_length);
+  //esp_task_wdt_reset();
   if (ret != 0)
   {
     commons.log_error("mbedtls_pk_verify");
@@ -225,7 +234,9 @@ int MbedtlsModule::hash_message(const unsigned char *message, size_t message_len
   case Hashes::MY_SHA_512:
     return mbedtls_sha512(message, message_length, hash, 0);
   case Hashes::MY_SHA3_256:
-    return mbedtls_sha3(MBEDTLS_SHA3_256, message, message_length, hash, 32);
+    // SHA3 não está disponível no mbedTLS do ESP-IDF
+    ESP_LOGE(TAG, "SHA3 não é suportado no mbedTLS. Use WolfSSL para SHA3.");
+    return -1; // Retorna erro
   default:
     return mbedtls_sha256(message, message_length, hash, 0);
   }
@@ -236,13 +247,15 @@ mbedtls_md_type_t MbedtlsModule::get_hash_type()
   switch (commons.get_chosen_hash())
   {
   case Hashes::MY_SHA_256:
-    return mbedtls_md_type_t::MBEDTLS_MD_SHA256;
+    return MBEDTLS_MD_SHA256;
   case Hashes::MY_SHA_512:
-    return mbedtls_md_type_t::MBEDTLS_MD_SHA512;
+    return MBEDTLS_MD_SHA512;
   case Hashes::MY_SHA3_256:
-    return mbedtls_md_type_t::MBEDTLS_MD_SHA3_256;
+    // Fallback para SHA256 quando SHA3 for solicitado no mbedTLS
+    ESP_LOGW(TAG, "SHA3 não suportado no mbedTLS, usando SHA256");
+    return MBEDTLS_MD_SHA256;
   default:
-    return mbedtls_md_type_t::MBEDTLS_MD_SHA256;
+    return MBEDTLS_MD_SHA256;
   }
 }
 

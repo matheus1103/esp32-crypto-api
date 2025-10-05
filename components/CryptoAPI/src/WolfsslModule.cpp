@@ -1,4 +1,5 @@
 #include "WolfsslModule.h"
+#include <esp_task_wdt.h>
 
 static const char *TAG = "WolfsslModule";
 
@@ -104,7 +105,9 @@ int WolfsslModule::gen_keys()
   switch (commons.get_chosen_algorithm())
   {
   case EDDSA_25519:
+    esp_task_wdt_reset();
     ret = wc_ed25519_make_key(rng, key_size, wolf_ed25519_key);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ed25519_make_key");
@@ -116,7 +119,9 @@ int WolfsslModule::gen_keys()
   case ECDSA_SECP256R1:
   case ECDSA_SECP521R1:
   default:
+    esp_task_wdt_reset();
     ret = wc_ecc_make_key_ex(rng, key_size, wolf_ecc_key, curve_id);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ecc_make_key_ex");
@@ -124,7 +129,9 @@ int WolfsslModule::gen_keys()
     }
     break;
   case EDDSA_448:
+    esp_task_wdt_reset();
     ret = wc_ed448_make_key(rng, key_size, wolf_ed448_key);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ed448_make_key");
@@ -155,7 +162,9 @@ int WolfsslModule::gen_rsa_keys(unsigned int rsa_key_size, int rsa_exponent)
 
   this->rsa_key_size = rsa_key_size;
 
+  esp_task_wdt_reset();
   int ret = wc_MakeRsaKey(wolf_rsa_key, rsa_key_size, rsa_exponent, rng);
+  esp_task_wdt_reset();
   if (ret != 0)
   {
     commons.log_error("wc_MakeRsaKey");
@@ -204,7 +213,9 @@ int WolfsslModule::sign(const unsigned char *message, size_t message_length, uns
   switch (commons.get_chosen_algorithm())
   {
   case EDDSA_25519:
+    esp_task_wdt_reset();
     ret = wc_ed25519ph_sign_hash(hash, hash_length, signature, signature_length, wolf_ed25519_key, NULL, 0);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ed25519ph_sign_hash");
@@ -212,7 +223,9 @@ int WolfsslModule::sign(const unsigned char *message, size_t message_length, uns
     }
     break;
   case RSA:
+    esp_task_wdt_reset();
     ret = wc_RsaSSL_Sign(hash, hash_length, signature, *signature_length, wolf_rsa_key, rng);
+    esp_task_wdt_reset();
     if (ret != *signature_length)
     {
       commons.log_error("wc_RsaSSL_Sign");
@@ -223,7 +236,9 @@ int WolfsslModule::sign(const unsigned char *message, size_t message_length, uns
   case ECDSA_BP512R1:
   case ECDSA_SECP256R1:
   case ECDSA_SECP521R1:
+    esp_task_wdt_reset();
     ret = wc_ecc_sign_hash(hash, hash_length, signature, signature_length, rng, wolf_ecc_key);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ecc_sign_hash");
@@ -231,7 +246,9 @@ int WolfsslModule::sign(const unsigned char *message, size_t message_length, uns
     }
     break;
   case EDDSA_448:
+    esp_task_wdt_reset();
     ret = wc_ed448ph_sign_hash(hash, hash_length, signature, signature_length, wolf_ed448_key, NULL, 0);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ed448ph_sign_hash");
@@ -287,7 +304,9 @@ int WolfsslModule::verify(const unsigned char *message, size_t message_length, u
   switch (commons.get_chosen_algorithm())
   {
   case EDDSA_25519:
+    esp_task_wdt_reset();
     ret = wc_ed25519ph_verify_hash(signature, signature_length, hash, hash_length, &verify_status, wolf_ed25519_key, NULL, 0);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ed25519ph_verify_hash");
@@ -300,7 +319,9 @@ int WolfsslModule::verify(const unsigned char *message, size_t message_length, u
     }
     break;
   case RSA:
+    esp_task_wdt_reset();
     ret = wc_RsaSSL_Verify(signature, signature_length, decrypted_signature, hash_length, wolf_rsa_key);
+    esp_task_wdt_reset();
     if (ret != hash_length)
     {
       commons.log_error("wc_RsaSSL_Verify");
@@ -317,7 +338,9 @@ int WolfsslModule::verify(const unsigned char *message, size_t message_length, u
   case ECDSA_BP512R1:
   case ECDSA_SECP256R1:
   case ECDSA_SECP521R1:
+    esp_task_wdt_reset();
     ret = wc_ecc_verify_hash(signature, signature_length, hash, hash_length, &verify_status, wolf_ecc_key);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ecc_verify_hash");
@@ -330,7 +353,9 @@ int WolfsslModule::verify(const unsigned char *message, size_t message_length, u
     }
     break;
   case EDDSA_448:
+    esp_task_wdt_reset();
     ret = wc_ed448ph_verify_hash(signature, signature_length, hash, hash_length, &verify_status, wolf_ed448_key, NULL, 0);
+    esp_task_wdt_reset();
     if (ret != 0)
     {
       commons.log_error("wc_ed448ph_verify_hash");

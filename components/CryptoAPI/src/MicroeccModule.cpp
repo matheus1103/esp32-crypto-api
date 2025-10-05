@@ -2,6 +2,7 @@
 #include "MbedtlsModule.h"
 #include "esp_random.h"
 #include <string.h>
+#include <esp_task_wdt.h>
 
 static const char *TAG = "MicroeccModule";
 
@@ -58,7 +59,9 @@ int MicroeccModule::gen_keys()
   private_key = (unsigned char *)malloc(private_key_size * sizeof(unsigned char));
   public_key = (unsigned char *)malloc(public_key_size * sizeof(unsigned char));
 
+  esp_task_wdt_reset();
   int ret = uECC_make_key(public_key, private_key, uECC_secp256r1());
+  esp_task_wdt_reset();
   if (ret == 0)
   {
     commons.log_error("uECC_make_key");
@@ -178,7 +181,9 @@ int MicroeccModule::sign(const unsigned char *message, size_t message_length, un
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
+  esp_task_wdt_reset();
   ret = uECC_sign(private_key, hash, hash_length, signature, uECC_secp256r1());
+  esp_task_wdt_reset();
   if (ret == 0)
   {
     commons.log_error("uECC_sign");
@@ -226,7 +231,9 @@ int MicroeccModule::verify(const unsigned char *message, size_t message_length, 
   unsigned long start_time = esp_timer_get_time() / 1000;
   unsigned long cycle_count_before = esp_cpu_get_cycle_count();
 
+  esp_task_wdt_reset();
   ret = uECC_verify(public_key, hash, hash_length, signature, uECC_secp256r1());
+  esp_task_wdt_reset();
   if (ret != 1)
   {
     commons.log_error("uECC_verify");
